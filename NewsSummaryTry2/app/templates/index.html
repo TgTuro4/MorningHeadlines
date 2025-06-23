@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local News Summarizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Morning Headlines</h1>
+            <p class="tagline">Your local news, summarized and simplified</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="location-section">
+            <div class="location-card">
+                <div id="location-info">
+                    <h2>Your Location</h2>
+                    <p id="detected-location">Detecting your location...</p>
+                </div>
+                <button id="refresh-btn" class="btn">Refresh News</button>
+            </div>
+            <div id="map"></div>
+        </section>
+        
+        <section id="search-info-section">
+            <div class="search-info-card">
+                <h3>Search Information</h3>
+                <div id="search-queries">Waiting for search data...</div>
+            </div>
+        </section>
+
+        <section id="news-section">
+            <h2>Today's Headlines</h2>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Fetching and summarizing your local news...</p>
+            </div>
+            <div id="error-message" class="error-message"></div>
+            <div id="news-container" class="news-container"></div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Local News Summarizer</p>
+            <p>Powered by Google Maps, NewsAPI, and OpenAI</p>
+        </div>
+    </footer>
+
+    <!-- Templates for news cards -->
+    <template id="news-card-template">
+        <div class="news-card">
+            <div class="news-image">
+                <img src="" alt="News Image">
+            </div>
+            <div class="news-content">
+                <h3 class="news-title"></h3>
+                <p class="news-summary"></p>
+                <div class="news-meta">
+                    <span class="news-source"></span>
+                    <a href="#" class="read-more" target="_blank">Read Full Article</a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&callback=initMap">
+    </script>
+</body>
+</html>
