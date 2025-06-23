@@ -3,6 +3,63 @@ let map;
 let userLocation = null;
 let locationDetails = null;
 let geocoder = null;
+let searchHistory = [];
+
+// Load search history from localStorage if available
+function loadSearchHistory() {
+    const savedHistory = localStorage.getItem('searchHistory');
+    if (savedHistory) {
+        try {
+            searchHistory = JSON.parse(savedHistory);
+        } catch (e) {
+            console.error('Error loading search history:', e);
+            searchHistory = [];
+        }
+    } else {
+        searchHistory = [];
+    }
+    
+    // Initialize the search history UI
+    updateSearchHistoryUI();
+}
+
+// Save search history to localStorage
+function saveSearchHistory() {
+    try {
+        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    } catch (e) {
+        console.error('Error saving search history:', e);
+    }
+}
+
+// Add a search to history
+function addToSearchHistory(address, lat, lng) {
+    // Don't add duplicates
+    const existingIndex = searchHistory.findIndex(item => 
+        item.address.toLowerCase() === address.toLowerCase());
+    
+    if (existingIndex !== -1) {
+        // Move to top if exists
+        const item = searchHistory.splice(existingIndex, 1)[0];
+        searchHistory.unshift(item);
+    } else {
+        // Add new entry
+        searchHistory.unshift({
+            address: address,
+            latitude: lat,
+            longitude: lng,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Keep only the last 5 searches
+        if (searchHistory.length > 5) {
+            searchHistory.pop();
+        }
+    }
+    
+    saveSearchHistory();
+    updateSearchHistoryUI();
+}
 
 // Initialize Google Map
 function initMap() {
@@ -18,6 +75,12 @@ function initMap() {
         zoomControl: true,
     });
     
+    // Initialize geocoder
+    geocoder = new google.maps.Geocoder();
+    
+    // Load search history
+    loadSearchHistory();
+    
     // Get user's location
     getUserLocation();
     
@@ -32,8 +95,11 @@ function initMap() {
         }
     });
     
-    // Initialize geocoder
-    geocoder = new google.maps.Geocoder();
+    // Initialize search history UI
+    updateSearchHistoryUI();
+    
+    // Hide manual location form by default
+    hideManualLocationForm();
 }
 
 // Get user's geolocation
@@ -58,12 +124,11 @@ function getUserLocation() {
                 const latLng = { lat: userLocation.latitude, lng: userLocation.longitude };
                 map.setCenter(latLng);
                 
-                // Add marker for user location
-                new google.maps.Marker({
+                // Add marker for user location using AdvancedMarkerElement
+                const markerView = new google.maps.marker.AdvancedMarkerElement({
                     position: latLng,
                     map: map,
-                    title: "Your Location",
-                    animation: google.maps.Animation.DROP
+                    title: "Your Location"
                 });
                 
                 // Get location details from coordinates
@@ -336,18 +401,89 @@ function displaySearchQueries(queries) {
     searchQueriesElement.appendChild(queryList);
 }
 
+// Update search history UI
+function updateSearchHistoryUI() {
+    const historyList = document.getElementById('history-list');
+    historyList.innerHTML = '';
+    
+    if (searchHistory.length > 0) {
+        searchHistory.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.className = 'history-item';
+            
+            // Format the address (truncate if too long)
+            let displayAddress = item.address;
+            if (displayAddress.length > 30) {
+                displayAddress = displayAddress.substring(0, 27) + '...';
+            }
+            
+            li.textContent = displayAddress;
+            
+            // Add click handler
+            li.addEventListener('click', () => {
+                useHistoryLocation(item);
+            });
+            
+            historyList.appendChild(li);
+        });
+        
+        // Show history section when we have items
+        const historySection = document.getElementById('search-history');
+        historySection.style.display = 'block';
+    } else {
+        // If no history, show a message
+        const li = document.createElement('li');
+        li.className = 'history-item no-history';
+        li.textContent = 'No search history yet';
+        historyList.appendChild(li);
+        
+        // Always show the history section
+        const historySection = document.getElementById('search-history');
+        historySection.style.display = 'block';
+    }
+}
+
+// Use a location from history
+function useHistoryLocation(historyItem) {
+    document.getElementById("detected-location").textContent = "Loading location...";
+    document.getElementById("loading").style.display = "flex";
+    
+    // Update map
+    const location = { lat: historyItem.latitude, lng: historyItem.longitude };
+    map.setCenter(location);
+    map.setZoom(10);
+    
+    // Create a marker
+    const markerView = new google.maps.marker.AdvancedMarkerElement({
+        position: location,
+        map: map
+    });
+    
+    // Get location details
+    getLocationDetails({
+        latitude: historyItem.latitude,
+        longitude: historyItem.longitude
+    });
+    
+    // Clear the address input
+    clearAddressInput();
+}
+
+// Clear the address input
+function clearAddressInput() {
+    document.getElementById("address-input").value = "";
+}
+
 // Show manual location form
 function showManualLocationForm() {
-    const form = document.getElementById("manual-location-form");
-    form.classList.add("active");
+    document.getElementById("manual-location-form").style.display = "block";
     document.getElementById("address-input").focus();
 }
 
 // Hide manual location form
 function hideManualLocationForm() {
-    const form = document.getElementById("manual-location-form");
-    form.classList.remove("active");
-    document.getElementById("address-input").value = "";
+    document.getElementById("manual-location-form").style.display = "none";
+    clearAddressInput();
 }
 
 // Search for manually entered address
@@ -361,6 +497,7 @@ function searchManualAddress() {
     
     document.getElementById("detected-location").textContent = "Searching for location...";
     document.getElementById("loading").style.display = "flex";
+    hideManualLocationForm();
     
     geocoder.geocode({ address: address }, function(results, status) {
         if (status === "OK" && results[0]) {
@@ -368,15 +505,17 @@ function searchManualAddress() {
             const lat = location.lat();
             const lng = location.lng();
             
+            // Add to search history
+            addToSearchHistory(address, lat, lng);
+            
             // Update map
             map.setCenter(location);
             map.setZoom(10);
             
             // Create a marker
-            new google.maps.Marker({
+            const markerView = new google.maps.marker.AdvancedMarkerElement({
                 position: location,
-                map: map,
-                animation: google.maps.Animation.DROP
+                map: map
             });
             
             // Get location details
@@ -385,11 +524,11 @@ function searchManualAddress() {
                 longitude: lng
             });
             
-            // Hide the form
-            hideManualLocationForm();
+            // Clear the address input
+            clearAddressInput();
         } else {
             handleError("Could not find the specified location. Please try again.");
-            hideManualLocationForm();
+            clearAddressInput();
         }
     });
 }

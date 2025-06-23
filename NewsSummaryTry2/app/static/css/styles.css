@@ -125,13 +125,15 @@ main {
     background-color: var(--secondary-color);
     color: white;
     border: none;
-    padding: 12px 24px;
     border-radius: 50px;
-    cursor: pointer;
+    padding: 12px 24px;
+    font-family: 'Poppins', sans-serif;
     font-size: 1rem;
-    font-weight: 600;
-    transition: var(--transition);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(247, 37, 133, 0.3);
+    display: inline-block;
     position: relative;
     overflow: hidden;
     z-index: 1;
@@ -205,22 +207,84 @@ main {
     transform: none;
 }
 
-.manual-location-form {
+#manual-location-form {
     background-color: var(--card-color);
     border-radius: var(--border-radius);
     padding: 20px;
-    box-shadow: var(--box-shadow);
     margin-bottom: 20px;
-    display: none;
-    transform: translateY(-20px);
-    opacity: 0;
-    transition: all 0.3s ease;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
 }
 
-.manual-location-form.active {
-    display: block;
-    transform: translateY(0);
-    opacity: 1;
+/* Manual location form visibility controlled by JavaScript */
+
+/* Location card styles */
+.location-card {
+    background-color: var(--card-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--box-shadow);
+}
+
+.location-card h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+/* Search history styles */
+.search-history {
+    margin-top: 20px;
+}
+
+.search-history h4 {
+    font-size: 16px;
+    color: var(--light-text);
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+#history-list {
+    list-style: none;
+    padding: 0;
+}
+
+.history-item {
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    background-color: #f0f2f5;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+}
+
+.history-item:hover {
+    background-color: #e2e6ea;
+    transform: translateX(5px);
+}
+
+.history-item::before {
+    content: '📍';
+    margin-right: 8px;
+    font-size: 14px;
+}
+
+.history-item.no-history {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    font-style: italic;
+    cursor: default;
+}
+
+.history-item.no-history:hover {
+    background-color: #f8f9fa;
+    transform: none;
 }
 
 .form-group {
@@ -228,6 +292,35 @@ main {
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.location-card .form-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.location-card .btn {
+    min-width: 80px;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+#search-address-btn {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+#cancel-address-btn {
+    background-color: #f0f2f5;
+    color: var(--text-color);
+    box-shadow: none;
 }
 
 .address-input {

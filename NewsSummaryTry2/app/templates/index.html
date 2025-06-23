@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local News Summarizer</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}?v={{ range(1, 10000) | random }}">
 </head>
 <body>
     <header>
@@ -27,11 +26,16 @@
                     <button id="manual-location-btn" class="btn btn-secondary">Change Location</button>
                 </div>
             </div>
-            <div id="manual-location-form" class="manual-location-form">
+            <div id="manual-location-form" class="location-card">
+                <h3>Search for News by Location</h3>
                 <div class="form-group">
                     <input type="text" id="address-input" placeholder="Enter an address, city, or location" class="address-input">
                     <button id="search-address-btn" class="btn">Search</button>
                     <button id="cancel-address-btn" class="btn btn-text">Cancel</button>
+                </div>
+                <div id="search-history" class="search-history">
+                    <h4>Recent Searches</h4>
+                    <ul id="history-list"></ul>
                 </div>
             </div>
             <div id="map"></div>
@@ -80,9 +84,9 @@
     </template>
 
     <!-- Scripts -->
-    <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}?v={{ range(1, 10000) | random }}"></script>
     <script async
-        src="https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&callback=initMap&loading=async&libraries=marker">
     </script>
 </body>
 </html>
