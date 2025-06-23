@@ -2,6 +2,7 @@
 let map;
 let userLocation = null;
 let locationDetails = null;
+let geocoder = null;
 
 // Initialize Google Map
 function initMap() {
@@ -20,8 +21,19 @@ function initMap() {
     // Get user's location
     getUserLocation();
     
-    // Add refresh button event listener
+    // Add event listeners
     document.getElementById("refresh-btn").addEventListener("click", refreshNews);
+    document.getElementById("manual-location-btn").addEventListener("click", showManualLocationForm);
+    document.getElementById("search-address-btn").addEventListener("click", searchManualAddress);
+    document.getElementById("cancel-address-btn").addEventListener("click", hideManualLocationForm);
+    document.getElementById("address-input").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            searchManualAddress();
+        }
+    });
+    
+    // Initialize geocoder
+    geocoder = new google.maps.Geocoder();
 }
 
 // Get user's geolocation
@@ -146,49 +158,59 @@ async function fetchNews(location) {
 function displayNews(articles) {
     const newsContainer = document.getElementById("news-container");
     const loading = document.getElementById("loading");
+    const errorElement = document.getElementById("error-message");
     
-    // Hide loading indicator
+    // Hide loading and error
     loading.style.display = "none";
+    errorElement.style.display = "none";
     
     // Clear previous news
     newsContainer.innerHTML = "";
     
-    // Check if we have articles
     if (!articles || articles.length === 0) {
-        handleError("No news articles found for your location.");
+        errorElement.textContent = "No news articles found for your location.";
+        errorElement.style.display = "block";
         return;
     }
     
     // Get the template
     const template = document.getElementById("news-card-template");
     
-    // Create and append news cards
-    articles.forEach(article => {
+    // Create and append news cards with staggered animation
+    articles.forEach((article, index) => {
         // Clone the template
         const newsCard = document.importNode(template.content, true);
         
-        // Set image
-        const imageElement = newsCard.querySelector(".news-image img");
+        // Set the content
+        const image = newsCard.querySelector(".news-image img");
+        const title = newsCard.querySelector(".news-title");
+        const summary = newsCard.querySelector(".news-summary");
+        const source = newsCard.querySelector(".news-source");
+        const readMore = newsCard.querySelector(".read-more");
+        
+        // Set animation order for staggered effect
+        const card = newsCard.querySelector(".news-card");
+        card.style.setProperty('--animation-order', index);
+        
+        // Set image with fallback
         if (article.urlToImage) {
-            imageElement.src = article.urlToImage;
-            imageElement.alt = article.title;
+            image.src = article.urlToImage;
+            image.alt = article.title;
         } else {
-            imageElement.src = "/static/images/news-placeholder.jpg";
-            imageElement.alt = "News placeholder image";
+            image.src = "/static/img/news-placeholder.jpg";
+            image.alt = "News placeholder image";
         }
         
-        // Set title
-        newsCard.querySelector(".news-title").textContent = article.title;
+        // Handle image loading errors
+        image.onerror = function() {
+            this.src = "/static/img/news-placeholder.jpg";
+            this.alt = "News placeholder image";
+        };
         
-        // Set summary
-        newsCard.querySelector(".news-summary").textContent = article.summary;
-        
-        // Set source
-        newsCard.querySelector(".news-source").textContent = article.source;
-        
-        // Set link
-        const readMoreLink = newsCard.querySelector(".read-more");
-        readMoreLink.href = article.url;
+        title.textContent = article.title;
+        summary.textContent = article.summary;
+        source.textContent = article.source;
+        readMore.href = article.url;
         
         // Append to container
         newsContainer.appendChild(newsCard);
@@ -208,14 +230,40 @@ function handleError(message) {
     errorElement.style.display = "block";
 }
 
-// Refresh news
+// Refresh news with animation
 function refreshNews() {
     if (locationDetails) {
-        document.getElementById("loading").style.display = "flex";
-        document.getElementById("news-container").innerHTML = "";
-        document.getElementById("error-message").style.display = "none";
+        // Add animation class to refresh button
+        const refreshBtn = document.getElementById("refresh-btn");
+        refreshBtn.classList.add("refreshing");
+        refreshBtn.disabled = true;
         
-        fetchNews(locationDetails);
+        // Create refresh animation
+        const newsContainer = document.getElementById("news-container");
+        const cards = newsContainer.querySelectorAll('.news-card');
+        
+        // Animate cards out
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = "0";
+                card.style.transform = "translateY(30px)";
+            }, index * 50);
+        });
+        
+        // After animation completes, show loading and fetch new news
+        setTimeout(() => {
+            document.getElementById("loading").style.display = "flex";
+            document.getElementById("news-container").innerHTML = "";
+            document.getElementById("error-message").style.display = "none";
+            
+            fetchNews(locationDetails);
+            
+            // Reset refresh button after a delay
+            setTimeout(() => {
+                refreshBtn.classList.remove("refreshing");
+                refreshBtn.disabled = false;
+            }, 1000);
+        }, cards.length ? cards.length * 50 + 300 : 0);
     } else {
         getUserLocation();
     }
@@ -286,6 +334,64 @@ function displaySearchQueries(queries) {
     }
     
     searchQueriesElement.appendChild(queryList);
+}
+
+// Show manual location form
+function showManualLocationForm() {
+    const form = document.getElementById("manual-location-form");
+    form.classList.add("active");
+    document.getElementById("address-input").focus();
+}
+
+// Hide manual location form
+function hideManualLocationForm() {
+    const form = document.getElementById("manual-location-form");
+    form.classList.remove("active");
+    document.getElementById("address-input").value = "";
+}
+
+// Search for manually entered address
+function searchManualAddress() {
+    const address = document.getElementById("address-input").value.trim();
+    
+    if (!address) {
+        alert("Please enter an address or location");
+        return;
+    }
+    
+    document.getElementById("detected-location").textContent = "Searching for location...";
+    document.getElementById("loading").style.display = "flex";
+    
+    geocoder.geocode({ address: address }, function(results, status) {
+        if (status === "OK" && results[0]) {
+            const location = results[0].geometry.location;
+            const lat = location.lat();
+            const lng = location.lng();
+            
+            // Update map
+            map.setCenter(location);
+            map.setZoom(10);
+            
+            // Create a marker
+            new google.maps.Marker({
+                position: location,
+                map: map,
+                animation: google.maps.Animation.DROP
+            });
+            
+            // Get location details
+            getLocationDetails({
+                latitude: lat,
+                longitude: lng
+            });
+            
+            // Hide the form
+            hideManualLocationForm();
+        } else {
+            handleError("Could not find the specified location. Please try again.");
+            hideManualLocationForm();
+        }
+    });
 }
 
 // Handle errors that might occur before the page is fully loaded

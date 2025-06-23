@@ -22,7 +22,17 @@
                     <h2>Your Location</h2>
                     <p id="detected-location">Detecting your location...</p>
                 </div>
-                <button id="refresh-btn" class="btn">Refresh News</button>
+                <div class="location-actions">
+                    <button id="refresh-btn" class="btn">Refresh News</button>
+                    <button id="manual-location-btn" class="btn btn-secondary">Change Location</button>
+                </div>
+            </div>
+            <div id="manual-location-form" class="manual-location-form">
+                <div class="form-group">
+                    <input type="text" id="address-input" placeholder="Enter an address, city, or location" class="address-input">
+                    <button id="search-address-btn" class="btn">Search</button>
+                    <button id="cancel-address-btn" class="btn btn-text">Cancel</button>
+                </div>
             </div>
             <div id="map"></div>
         </section>
@@ -48,7 +58,7 @@
     <footer>
         <div class="container">
             <p>&copy; 2025 Local News Summarizer</p>
-            <p>Powered by Google Maps, NewsAPI, and OpenAI</p>
+            <p>Powered by Google Maps, NewsAPI, OpenAI, and Turbold Gereltod</p>
         </div>
     </footer>
 
